@@ -7,6 +7,7 @@ import com.folioreader.FolioReader;
 import com.folioreader.Config;
 import com.stefan17896.ebookreader.R;
 import com.stefan17896.ebookreader.app.ReadBookData;
+import com.stefan17896.ebookreader.app.Storage;
 
 import android.R.layout;
 import android.R.raw;
@@ -34,22 +35,32 @@ MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        readBookData();
-
-        folioReader = FolioReader.get();
-        //folioReader.openBook(R.raw.book1);
-        //folioReader.openBook("file:///android_asset/book1.epub");
-    }
-    public void readBookData(){
-        String bookName = "book1.epub";
         File appFolder = new File("/storage/emulated/0/Android/data/com.stefan17896.ebookreader");
         appFolder.mkdirs();
 
+        File book = new File("/storage/emulated/0/Download/book1.epub");
+        openBook(book);
 
-        List bookData = new ArrayList();
-        bookData = ReadBookData.getBookData();
+
+        //folioReader.openBook(R.raw.book1);
+        //folioReader.openBook("file:///android_asset/book1.epub");
     }
+    public void openBook(File inFile){
+
+        String bookFileName = inFile.toString().substring(inFile.toString().lastIndexOf("/")+1);
+         List bookData = new ArrayList();
+        bookData = ReadBookData.getBookData(inFile);
+
+        String cover = (String) bookData.get(1);
+        String title = (String) bookData.get(1);
+
+        Storage.Book book = new Storage.Book(bookFileName, cover, title, 0) ;
+
+        folioReader = FolioReader.get();
+        folioReader.openBook(inFile.toString());
+
+    }
+
     public void test(View view){
         //folioReader.openBook(R.raw.book1);
         test2(view);
