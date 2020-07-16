@@ -41,7 +41,6 @@ public class ReadBookData {
         try {
             InputStream inputStream = new FileInputStream(metaInf);
             bookdt = bookData( path + "/" + findContentOpf(inputStream));
-            int halt = 0;
             } catch (XmlPullParserException | IOException e) {
                 e.printStackTrace();
         }
