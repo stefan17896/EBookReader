@@ -168,6 +168,7 @@ public class ReadBookData {
         }
     }
 
+    //von stack overflow geklaut
     public static void unzip(File zipFile, File targetDirectory) throws IOException {
         ZipInputStream zis = new ZipInputStream(
                 new BufferedInputStream(new FileInputStream(zipFile)));
