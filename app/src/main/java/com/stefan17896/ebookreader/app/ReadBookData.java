@@ -1,11 +1,16 @@
 package com.stefan17896.ebookreader.app;
 
+import android.app.Application;
+import android.os.FileUtils;
 import android.util.Log;
 import android.util.Xml;
 
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
-
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
+import android.app.Activity;
+import android.content.Context;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -13,18 +18,23 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.ZipEntry;
+
+
 import java.util.zip.ZipInputStream;
 
 public class ReadBookData {
     private static final String ns = null;
 
-    public static List getBookData(File bookFile)  {
+    public static List getBookData(File bookFile, boolean removeFiles)  {
         String book = bookFile.getName();
-        File appFolder = new File("/storage/emulated/0/Android/data/com.stefan17896.ebookreader");
-        File path = new File("/storage/emulated/0/Android/data/com.stefan17896.ebookreader/" + book);
+        File appFolder = new File("/storage/emulated/0/Android/data/com.stefan17896.ebookreader/files");
+        File path = new File(appFolder + "/unpacked/" + book + "/");
         path.mkdirs();
 
         try {
@@ -36,16 +46,54 @@ public class ReadBookData {
 
         File metaInf = new File(path + "/META-INF/container.xml");
 
-        List bookdt = new ArrayList();
+        List bookData = new ArrayList();
 
         try {
             InputStream inputStream = new FileInputStream(metaInf);
-            bookdt = bookData( path + "/" + findContentOpf(inputStream));
+            bookData = bookData( path + "/" + findContentOpf(inputStream));
             } catch (XmlPullParserException | IOException e) {
                 e.printStackTrace();
         }
-       return bookdt;
+
+        if(bookData.get(1) != null && bookData.get(0) != null) {
+            File fullCoverPath = new File(path.toString() + "/" + bookData.get(1));
+            File copyPath = new File(appFolder + "/" + md5((String) bookData.get(0)) + ".cov");
+            if(!copyPath.exists())
+            copyFile(fullCoverPath, copyPath );
+        }
+        if(path.isDirectory() && removeFiles){
+            deleteRecursive(path);
+        }
+       return bookData;
     }
+    public static String md5(String s) {
+        try {
+            // Create MD5 Hash
+            MessageDigest digest = java.security.MessageDigest.getInstance("MD5");
+            digest.update(s.getBytes());
+            byte messageDigest[] = digest.digest();
+
+            // Create Hex String
+            StringBuffer hexString = new StringBuffer();
+            for (int i=0; i<messageDigest.length; i++)
+                hexString.append(Integer.toHexString(0xFF & messageDigest[i]));
+            return hexString.toString();
+
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+        return "";
+    }
+    private static void  deleteRecursive(File fileOrDirectory) {
+
+        if(fileOrDirectory.exists()) {
+            if (fileOrDirectory.isDirectory() && fileOrDirectory.listFiles().length > 0)
+                for (File child : fileOrDirectory.listFiles())
+                    deleteRecursive(child);
+            fileOrDirectory.delete();
+        }
+    }
+
     public static class Entry {
         public final String href;
         public final String id;
@@ -58,6 +106,35 @@ public class ReadBookData {
         }
     }
 
+    private static void copyFile(File inputPath, File outputPath) {
+
+        InputStream in = null;
+        OutputStream out = null;
+        try {
+
+            //create output directory if it doesn't exist
+            in = new FileInputStream(inputPath);
+            out = new FileOutputStream(outputPath);
+
+            byte[] buffer = new byte[1024];
+            int read;
+            while ((read = in.read(buffer)) != -1) {
+                out.write(buffer, 0, read);
+            }
+            in.close();
+            in = null;
+
+            // write the output file (You have now copied the file)
+            out.flush();
+            out.close();
+            out = null;
+
+        } catch (FileNotFoundException fnfe1) {
+            Log.e("tag", fnfe1.getMessage());
+        } catch (Exception e) {
+            Log.e("tag", e.getMessage());
+        }
+    }
     public static List bookData(String opfLocation) throws XmlPullParserException, IOException {
         String title;
         List<String> bookData = new ArrayList<>();
@@ -129,13 +206,14 @@ public class ReadBookData {
     return bookData;
     }
 
-    //Wrapper for development
+    /*Wrapper for development
     public static List getBookData()
     {
         File bookFile = new File("/storage/emulated/0/Download/book1.epub");
         return getBookData(bookFile);
 
-    }
+    }*/
+
 
     public static String findContentOpf(InputStream in) throws XmlPullParserException, IOException {
         String fullPath = "";
@@ -168,7 +246,7 @@ public class ReadBookData {
     }
 
     //von stack overflow geklaut
-    public static void unzip(File zipFile, File targetDirectory) throws IOException {
+    private static void unzip(File zipFile, File targetDirectory) throws IOException {
         ZipInputStream zis = new ZipInputStream(
                 new BufferedInputStream(new FileInputStream(zipFile)));
         try {

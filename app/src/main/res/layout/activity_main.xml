@@ -12,7 +12,6 @@
         android:layout_height="wrap_content"
         android:clickable="true"
         android:onClick="test2"
-        app:srcCompat="@drawable/ic_launcher_foreground"
         tools:layout_editor_absoluteX="40dp"
         tools:layout_editor_absoluteY="34dp" />
 </androidx.constraintlayout.widget.ConstraintLayout>
